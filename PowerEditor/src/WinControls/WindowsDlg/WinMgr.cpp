@@ -5,19 +5,19 @@
 // Compiles with Visual C++ 6.0. Runs on Win 98 and probably Win 2000 too.
 // Set tabsize = 3 in your editor.
 //
-// Theo - Heavily modified to remove MFC dependencies.  
+// Theo - Heavily modified to remove MFC dependencies.
 //        Replaced CWnd*/HWND, CRect/RECT, CSize/SIZE, CPoint/POINT
 
 
 #include "WinMgr.h"
 
 // Theo - Style Helpers
-inline static DWORD GetStyle(HWND hWnd) { 
-	return (DWORD)GetWindowLongPtr(hWnd, GWL_STYLE); 
+inline static DWORD GetStyle(HWND hWnd) {
+	return (DWORD)GetWindowLongPtr(hWnd, GWL_STYLE);
 }
 
-inline static DWORD GetExStyle(HWND hWnd) { 
-	return (DWORD)GetWindowLongPtr(hWnd, GWL_EXSTYLE); 
+inline static DWORD GetExStyle(HWND hWnd) {
+	return (DWORD)GetWindowLongPtr(hWnd, GWL_EXSTYLE);
 }
 
 const UINT WM_WINMGR = RegisterWindowMessage(TEXT("WM_WINMGR"));
@@ -121,7 +121,7 @@ WINRECT* CWinMgr::FindRect(int nID)
 {
 	assert(m_map);
 	for (WINRECT* w=m_map; !w->IsEnd(); ++w) {
-		if (w->GetID()==(UINT)nID)
+		if (w->GetID() == static_cast<UINT>(nID))
 			return w;
 	}
 	return NULL;
@@ -147,7 +147,7 @@ CWinMgr::CalcGroup(WINRECT* pGroup, HWND hWnd)
 		h = min(abs(h), RectHeight(rcTotal)/2);
 		::InflateRect(&rcTotal, -w, -h);
 	}
-	
+
 	BOOL bRow = pGroup->IsRowGroup();		 // Is this a row group?
 
 	// Running height or width: start with total
@@ -223,7 +223,7 @@ CWinMgr::AdjustSize(WINRECT* wrc, BOOL bRow,
 	//
 	int hwCurrent = wrc->GetHeightOrWidth(bRow); // current size
 	int hwExtra = hw - hwCurrent;						// amount extra
-	hwExtra = min(max(hwExtra, 0), hwRemaining);	// truncate 
+	hwExtra = min(max(hwExtra, 0), hwRemaining);	// truncate
 	hw = hwCurrent + hwExtra;							// new height-or-width
 	wrc->SetHeightOrWidth(hw, bRow);				// set...
 	hwRemaining -= hwExtra;								// and adjust remaining
@@ -274,7 +274,7 @@ CWinMgr::OnGetSizeInfo(SIZEINFO& szi, WINRECT* wrc, HWND hWnd)
 {
 	szi.szMin = SIZEZERO;				// default min size = zero
 	szi.szMax = SIZEMAX;					// default max size = infinite
-	szi.szDesired = RectToSize(wrc->GetRect());	// default desired size = current 
+	szi.szDesired = RectToSize(wrc->GetRect());	// default desired size = current
 
 	if (wrc->IsGroup()) {
 		// For groups, calculate min, max, desired size as aggregate of children
@@ -304,7 +304,7 @@ CWinMgr::OnGetSizeInfo(SIZEINFO& szi, WINRECT* wrc, HWND hWnd)
 			}
 		}
 
-		// Add margins. 
+		// Add margins.
 		int w2,h2;
 		wrc->GetMargins(w2,h2);			// get margins
 		w2<<=1; h2<<=1;					// double
@@ -388,15 +388,16 @@ BOOL CWinMgr::SendGetSizeInfo(SIZEINFO& szi, HWND hWnd, UINT nID)
 	nmw.idFrom = nID;							// ID of child I'm computing
 	nmw.sizeinfo = szi;						// copy
 
-	if (!SendMessage(hWnd, WM_WINMGR, nID, (LPARAM)&nmw) && !nmw.processed) {
+	if (!SendMessage(hWnd, WM_WINMGR, nID, reinterpret_cast<LPARAM>(&nmw)) && !nmw.processed)
+	{
 		HWND hwndChild = ::GetDlgItem(hWnd, nID);
-		if (!hwndChild || !::SendMessage(hwndChild,WM_WINMGR,nID,(LPARAM)&nmw))
+		if (!hwndChild || !::SendMessage(hwndChild, WM_WINMGR, nID, reinterpret_cast<LPARAM>(&nmw)))
 			return FALSE;
 	}
 	szi = nmw.sizeinfo; // copy back to caller's struct
 	return TRUE;
 }
-		
+
 //////////////////
 // Get min/max info.
 //
@@ -410,7 +411,7 @@ CWinMgr::GetMinMaxInfo(HWND hWnd, MINMAXINFO* lpMMI)
 }
 
 //////////////////
-// Get min/max info. 
+// Get min/max info.
 //
 void CWinMgr::GetMinMaxInfo(HWND hWnd, SIZEINFO& szi)
 {
@@ -421,22 +422,30 @@ void CWinMgr::GetMinMaxInfo(HWND hWnd, SIZEINFO& szi)
 	// Add extra space for frame/dialog screen junk.
 	DWORD dwStyle = GetStyle(hWnd);
 	DWORD dwExStyle = GetExStyle(hWnd);
-	if (dwStyle & WS_VISIBLE) {
+	if (dwStyle & WS_VISIBLE)
+	{
 		SIZE& szMin = szi.szMin; // ref!
-		if (!(dwStyle & WS_CHILD)) {
+		if (!(dwStyle & WS_CHILD))
+		{
 			if (dwStyle & WS_CAPTION)
 				szMin.cy += GetSystemMetrics(SM_CYCAPTION);
 			if (::GetMenu(hWnd))
 				szMin.cy += GetSystemMetrics(SM_CYMENU);
 		}
-		if (dwStyle & WS_THICKFRAME) {
+
+		if (dwStyle & WS_THICKFRAME)
+		{
 			szMin.cx += 2*GetSystemMetrics(SM_CXSIZEFRAME);
 			szMin.cy += 2*GetSystemMetrics(SM_CYSIZEFRAME);
-		} else if (dwStyle & WS_BORDER) {
+		}
+		else if (dwStyle & WS_BORDER)
+		{
 			szMin.cx += 2*GetSystemMetrics(SM_CXBORDER);
 			szMin.cy += 2*GetSystemMetrics(SM_CYBORDER);
 		}
-		if (dwExStyle & WS_EX_CLIENTEDGE) {
+
+		if (dwExStyle & WS_EX_CLIENTEDGE)
+		{
 			szMin.cx += 2*GetSystemMetrics(SM_CXEDGE);
 			szMin.cy += 2*GetSystemMetrics(SM_CYEDGE);
 		}
@@ -459,17 +468,21 @@ void CWinMgr::MoveRect(WINRECT* pwrcMove, POINT ptMove, HWND pParentWnd)
 
 	RECT& rcNext = next->GetRect();
 	RECT& rcPrev = prev->GetRect();
-	if (bIsRow) {
+	if (bIsRow)
+	{
 		// a row can only be moved up or down
 		ptMove.x = 0;
 		rcPrev.bottom += ptMove.y;
 		rcNext.top += ptMove.y;
-	} else {
+	}
+	else
+	{
 		// a column can only be moved left or right
 		ptMove.y = 0;
 		rcPrev.right += ptMove.x;
 		rcNext.left += ptMove.x;
 	}
+
 	OffsetRect(pwrcMove->GetRect(), ptMove);
 	if (prev->IsGroup())
 		CalcGroup(prev, pParentWnd);
