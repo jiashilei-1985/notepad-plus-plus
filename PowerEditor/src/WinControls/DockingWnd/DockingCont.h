@@ -26,17 +26,9 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-#ifndef DOCKINGCONT
-#define DOCKINGCONT
-
-#ifndef RESOURCE_H
+#pragma once
 #include "resource.h"
-#endif //RESOURCE_H
-
-#ifndef DOCKING_H
 #include "Docking.h"
-#endif //DOCKING_H
-
 #include <vector>
 #include "StaticDialog.h"
 #include "Common.h"
@@ -98,8 +90,8 @@ public:
 	};
 
 	void setActiveTb(tTbData* pTbData);
-	void setActiveTb(INT iItem);
-	INT getActiveTb();
+	void setActiveTb(int iItem);
+	int getActiveTb();
 	tTbData * getDataOfActiveTb();
 	std::vector<tTbData *> getDataOfAllTb() {
 		return _vTbData;
@@ -113,7 +105,7 @@ public:
 		return _isFloating;
 	}
 
-	INT getElementCnt() {
+	size_t getElementCnt() {
 		return _vTbData.size();
 	}
 
@@ -142,7 +134,7 @@ public:
 	};
 
     virtual void destroy() {
-		for (INT iTb = _vTbData.size(); iTb > 0; iTb--)
+		for (int iTb = static_cast<int>(_vTbData.size()); iTb > 0; iTb--)
 		{
 			delete _vTbData[iTb-1];
 		}
@@ -154,13 +146,13 @@ protected :
 	// Subclassing caption
 	LRESULT runProcCaption(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK wndCaptionProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-		return (((DockingCont *)(::GetWindowLongPtr(hwnd, GWL_USERDATA)))->runProcCaption(hwnd, Message, wParam, lParam));
+		return (((DockingCont *)(::GetWindowLongPtr(hwnd, GWLP_USERDATA)))->runProcCaption(hwnd, Message, wParam, lParam));
 	};
 
 	// Subclassing tab
 	LRESULT runProcTab(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK wndTabProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-		return (((DockingCont *)(::GetWindowLongPtr(hwnd, GWL_USERDATA)))->runProcTab(hwnd, Message, wParam, lParam));
+		return (((DockingCont *)(::GetWindowLongPtr(hwnd, GWLP_USERDATA)))->runProcTab(hwnd, Message, wParam, lParam));
 	};
 
     virtual INT_PTR CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -171,18 +163,18 @@ protected :
 	void onSize();
 
 	// functions for caption handling and drawing
-	eMousePos isInRect(HWND hwnd, INT x, INT y);
+	eMousePos isInRect(HWND hwnd, int x, int y);
 
 	// handling of toolbars
 	void doClose();
 
 	// return new item
-	INT  SearchPosInTab(tTbData* pTbData);
-	void SelectTab(INT iTab);
+	int  searchPosInTab(tTbData* pTbData);
+	void selectTab(int iTab);
 
-	INT  hideToolbar(tTbData* pTbData, BOOL hideClient = TRUE);
+	int  hideToolbar(tTbData* pTbData, BOOL hideClient = TRUE);
 	void viewToolbar(tTbData *pTbData);
-	INT  removeTab(tTbData* pTbData) {
+	int  removeTab(tTbData* pTbData) {
 		return hideToolbar(pTbData, FALSE);
 	};
 
@@ -232,10 +224,14 @@ private:
 	BOOL					_bCapTTHover;
 	eMousePos				_hoverMPos;
 
+	int _captionHeightDynamic = HIGH_CAPTION;
+	int _captionGapDynamic = CAPTION_GAP;
+	int _closeButtonPosLeftDynamic = CLOSEBTN_POS_LEFT;
+	int _closeButtonPosTopDynamic = CLOSEBTN_POS_TOP;
+	int _closeButtonWidth;
+	int _closeButtonHeight;
+
 	// data of added windows
 	std::vector<tTbData *>		_vTbData;
 };
 
-
-
-#endif // DOCKINGCONT
